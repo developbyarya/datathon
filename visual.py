@@ -7,11 +7,12 @@ import re
 import folium # Import Folium
 
 st.header("DATATHON - VISTARA")
-st.title("Peta Lokasi Rumah Sakit dan Kecelakaan di Yogyakarta")
+st.title("Peta Lokasi Rumah Sakit, Kecelakaan, dan Ambulance di Yogyakarta") # Judul diperbarui
 
 # Pastikan file CSV tersedia di direktori yang sama atau berikan path lengkap
 df_hospital = pd.read_csv('rumah_sakit_yogyakarta.csv')
 df_kecelakaan = pd.read_csv('kecelakaan-with-location-geoencoded.csv')
+df_ambulance = pd.read_csv('ambulance.csv') # Memuat data ambulance
 
 YOGYA_LAT = -7.7956
 YOGYA_LON = 110.3695
@@ -46,10 +47,8 @@ with st.expander("📉 Visualisasi Data"):
 
         st.dataframe(df_hospital.head(jumlah_rumah_sakit), hide_index=True)
 
-        # Inisialisasi peta Folium untuk Rumah Sakit
         m_hospital = folium.Map(location=[YOGYA_LAT, YOGYA_LON], zoom_start=12)
 
-        # Tambahkan marker untuk Rumah Sakit
         for index, row in df_hospital.head(jumlah_rumah_sakit).iterrows():
             if pd.notna(row['latitude']) and pd.notna(row['longitude']):
                 popup_text = f"<b>{row.get('nama_rs', 'Rumah Sakit')}</b><br>" \
@@ -57,14 +56,13 @@ with st.expander("📉 Visualisasi Data"):
                 folium.Marker(
                     location=[row['latitude'], row['longitude']],
                     popup=popup_text,
-                    icon=folium.Icon(color='blue', icon='hospital', prefix='fa') # Icon Rumah Sakit
+                    icon=folium.Icon(color='blue', icon='hospital', prefix='fa')
                 ).add_to(m_hospital)
         
-        # Tampilkan peta Folium di Streamlit
         st.components.v1.html(folium.Figure().add_child(m_hospital).render(), height=500)
         st.write("Catatan: Titik **biru** menunjukkan lokasi Rumah Sakit. Klik pada titik untuk melihat detail.")
 
-    with tabs[1]: # Tab "Data Kecelakaan" sekarang menggunakan Folium
+    with tabs[1]: # Tab "Data Kecelakaan" menggunakan Folium
         st.subheader("Data Kecelakaan")
         df_kecelakaan['bulan'] = df_kecelakaan['created_at'].dt.strftime('%Y-%m')
         df_hanya_kecelakaan = df_kecelakaan.copy()
@@ -82,34 +80,44 @@ with st.expander("📉 Visualisasi Data"):
         st.pyplot(fig)
         
         st.subheader("Peta Lokasi Kecelakaan (Peta Interaktif)")
-        # Inisialisasi peta Folium untuk Kecelakaan
         m_kecelakaan = folium.Map(location=[YOGYA_LAT, YOGYA_LON], zoom_start=12)
 
-        # Tambahkan marker untuk Kecelakaan
         for index, row in df_kecelakaan.iterrows():
             if pd.notna(row['latitude']) and pd.notna(row['longitude']):
                 popup_text = f"<b>Kecelakaan</b><br>" \
                              f"Waktu: {row['created_at'].strftime('%Y-%m-%d %H:%M')}<br>" \
-                             f"Deskripsi: {row.get('text', 'Tidak ada deskripsi')[:100]}..." # Ambil 100 karakter pertama
+                             f"Deskripsi: {row.get('text', 'Tidak ada deskripsi')[:100]}..."
                 folium.Marker(
                     location=[row['latitude'], row['longitude']],
                     popup=popup_text,
-                    icon=folium.Icon(color='red', icon='car', prefix='fa') # Icon Mobil/Kecelakaan
+                    icon=folium.Icon(color='red', icon='car', prefix='fa')
                 ).add_to(m_kecelakaan)
         
-        # Tampilkan peta Folium di Streamlit
         st.components.v1.html(folium.Figure().add_child(m_kecelakaan).render(), height=500)
         st.write("Catatan: Titik **merah** menunjukkan lokasi Kecelakaan. Klik pada titik untuk melihat detail.")
 
+    with tabs[2]: # Tab "Data Ambulance" sekarang menggunakan Folium
+        st.subheader("Data Ambulance (Peta Interaktif)")
+        st.dataframe(df_ambulance, hide_index=True) # Menampilkan data tabel ambulans
 
-    with tabs[2]:
-        st.subheader("Data Ambulance")
-        st.write("Konten untuk Data Ambulance akan ditempatkan di sini.")
+        m_ambulance = folium.Map(location=[YOGYA_LAT, YOGYA_LON], zoom_start=12)
 
-    with tabs[3]: # Tab untuk peta gabungan interaktif (tetap menggunakan Folium)
-        st.subheader("Peta Gabungan Lokasi Rumah Sakit (Biru) dan Kecelakaan (Merah)")
+        for index, row in df_ambulance.iterrows():
+            if pd.notna(row['latitude']) and pd.notna(row['longitude']):
+                popup_text = f"<b>Ambulance {index+1}</b><br>" \
+                             f"Lat: {row['latitude']:.4f}, Lon: {row['longitude']:.4f}"
+                folium.Marker(
+                    location=[row['latitude'], row['longitude']],
+                    popup=popup_text,
+                    icon=folium.Icon(color='green', icon='ambulance', prefix='fa') # Icon Ambulance
+                ).add_to(m_ambulance)
+        
+        st.components.v1.html(folium.Figure().add_child(m_ambulance).render(), height=500)
+        st.write("Catatan: Titik **hijau** menunjukkan lokasi Ambulance. Klik pada titik untuk melihat detail.")
 
-        # Inisialisasi peta Folium di tengah Yogyakarta
+    with tabs[3]: # Tab untuk peta gabungan interaktif (sekarang termasuk Ambulance)
+        st.subheader("Peta Gabungan Lokasi Rumah Sakit (Biru), Kecelakaan (Merah), dan Ambulance (Hijau)")
+
         m_combined = folium.Map(location=[YOGYA_LAT, YOGYA_LON], zoom_start=12)
 
         # Tambahkan marker untuk Rumah Sakit
@@ -135,6 +143,16 @@ with st.expander("📉 Visualisasi Data"):
                     icon=folium.Icon(color='red', icon='car', prefix='fa')
                 ).add_to(m_combined)
 
-        # Tampilkan peta Folium di Streamlit
+        # Tambahkan marker untuk Ambulance
+        for index, row in df_ambulance.iterrows():
+            if pd.notna(row['latitude']) and pd.notna(row['longitude']):
+                popup_text = f"<b>Ambulance {index+1}</b><br>" \
+                             f"Lat: {row['latitude']:.4f}, Lon: {row['longitude']:.4f}"
+                folium.Marker(
+                    location=[row['latitude'], row['longitude']],
+                    popup=popup_text,
+                    icon=folium.Icon(color='green', icon='ambulance', prefix='fa') # Icon Ambulance
+                ).add_to(m_combined)
+
         st.components.v1.html(folium.Figure().add_child(m_combined).render(), height=500)
-        st.write("Catatan: Titik **biru** menunjukkan Rumah Sakit dan titik **merah** menunjukkan lokasi Kecelakaan. Klik pada titik untuk melihat detail lebih lanjut.")
+        st.write("Catatan: Titik **biru** menunjukkan Rumah Sakit, **merah** Kecelakaan, dan **hijau** Ambulance. Klik pada titik untuk melihat detail lebih lanjut.")
