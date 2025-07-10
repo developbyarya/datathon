@@ -55,7 +55,7 @@ def geoencode(locations):
             print("Location not found: ", loc)
             for kabupaten in known_locations.keys():
                 if kabupaten.lower() in loc.lower():
-                    location = geocode(known_locations[kabupaten] + ", Yogyakarta, Indonesia")
+                    location = geocode(known_locations[kabupaten] + ",Yogyakarta, Indonesia")
                     print("Location found: ", location)
                     location_result.append((location.latitude, location.longitude))
                     break
